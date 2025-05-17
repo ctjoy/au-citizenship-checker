@@ -1,103 +1,265 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { BuyMeCoffee } from "@/components/BuyMeCoffee";
+import { DatePicker } from "@/components/DatePicker";
+import { DatePickerWithRange } from "@/components/DatePickerRange";
+import { EligibilityResult } from "@/components/EligibilityResult";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Trip, calculateEligibilityDate, parseCsvTrips } from "@/lib/citizenship-calculator";
+import { format } from "date-fns";
+import { useState } from "react";
+import { DateRange } from "react-day-picker";
+
+export default function CitizenshipEligibilityApp() {
+  const [residencyStart, setResidencyStart] = useState<Date>();
+  const [permanentVisaStart, setPermanentVisaStart] = useState<Date>();
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [currentTrip, setCurrentTrip] = useState<DateRange>();
+  const [csvTrips, setCsvTrips] = useState("");
+  const [result, setResult] = useState<{
+    eligibilityDate: Date;
+    remainingDays4Years: number;
+    remainingDays1Year: number;
+  } | null>(null);
+  const [showResult, setShowResult] = useState(false);
+
+  function addTrip() {
+    if (currentTrip?.from && currentTrip?.to) {
+      setTrips([...trips, { depart: currentTrip.from, arrive: currentTrip.to }]);
+      setCurrentTrip(undefined);
+    }
+  }
+
+  function handleSubmit() {
+    if (!residencyStart || !permanentVisaStart) {
+      setResult(null);
+      setShowResult(true);
+      return;
+    }
+
+    const result = calculateEligibilityDate(residencyStart, permanentVisaStart, trips);
+    setResult(result);
+    setShowResult(true);
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="bg-muted p-6">
+      <div className="max-w-4xl mx-auto p-4 space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold">Australian Citizenship Eligibility Checker</h1>
+          <p className="text-muted-foreground">Check your eligibility for Australian citizenship</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <Card>
+          <CardHeader className="space-y-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-center md:hidden">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">View Requirements</Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>General Residence Requirements</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">
+                          To be eligible, you must have:
+                        </p>
+                        <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1">
+                          <li>Been living in Australia on a valid visa for 4 years immediately before the day you apply</li>
+                          <li>Held a permanent visa or a Special Category (subclass 444) visa (SCV) for the last 12 months immediately before the day you apply</li>
+                          <li>Not been absent from Australia for more than 12 months in the past 4 years, and no more than 90 days in the 12 months immediately before applying</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div className="space-y-1">
+                  <h2 className="text-xl font-semibold">How to use the Residence Calculator</h2>
+                  <p className="text-sm text-muted-foreground">
+                    To use the Residence Calculator, you need to enter exact dates of your:
+                  </p>
+                  <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1">
+                    <li>permanent residence</li>
+                    <li>lawful residence</li>
+                    <li>travel in and out of Australia in the last 4 years</li>
+                  </ul>
+                </div>
+                <div className="hidden md:flex md:flex-shrink-0">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">View Requirements</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>General Residence Requirements</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            To be eligible, you must have:
+                          </p>
+                          <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1">
+                            <li>Been living in Australia on a valid visa for 4 years immediately before the day you apply</li>
+                            <li>Held a permanent visa or a Special Category (subclass 444) visa (SCV) for the last 12 months immediately before the day you apply</li>
+                            <li>Not been absent from Australia for more than 12 months in the past 4 years, and no more than 90 days in the 12 months immediately before applying</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <h3 className="font-semibold">Lawful Residence Date</h3>
+              <p className="text-sm text-muted-foreground">
+                This is when you first started living in Australia on a valid visa. If you are unsure of the exact date, an estimated date can be used as long as you are confident that it was more than four years ago.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-semibold">Permanent Residence Date</h3>
+              <p className="text-sm text-muted-foreground">
+                Your permanent residency starts on the date:
+              </p>
+              <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1">
+                <li>We granted the permanent visa when you were in Australia, or</li>
+                <li>You first entered Australia on a permanent visa</li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Lawful Residence Start Date</label>
+                <DatePicker date={residencyStart} onDateChange={setResidencyStart} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Permanent Visa Start Date</label>
+                <DatePicker date={permanentVisaStart} onDateChange={setPermanentVisaStart} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Trips Outside Australia</label>
+                <Tabs defaultValue="picker" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="picker">Date Picker</TabsTrigger>
+                    <TabsTrigger value="csv">CSV Input</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="picker" className="space-y-2">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Select your departure and return dates using the calendar. Click &quot;Add Trip&quot; to add each trip to the list.
+                    </p>
+                    <DatePickerWithRange date={currentTrip} onDateChange={setCurrentTrip} />
+                    <Button onClick={addTrip} disabled={!currentTrip?.from || !currentTrip?.to} variant="outline">Add Trip</Button>
+                  </TabsContent>
+                  <TabsContent value="csv" className="space-y-2">
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Enter dates in format: DD/MM/YYYY, DD/MM/YYYY (one per line, departure and return dates separated by a comma)"
+                        value={csvTrips}
+                        onChange={(e) => setCsvTrips(e.target.value)}
+                        rows={5}
+                      />
+                      <Button onClick={() => setTrips(parseCsvTrips(csvTrips))} variant="outline">Parse Trips</Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+                {trips.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <h4 className="text-sm font-medium">Added Trips:</h4>
+                    <div className="space-y-1">
+                      {trips.map((trip, index) => (
+                        <div key={index} className="flex items-center justify-between text-sm bg-muted/40 p-1.5 rounded-md">
+                          <span>
+                            {format(trip.depart, "dd/MM/yyyy")} - {format(trip.arrive, "dd/MM/yyyy")}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => setTrips(trips.filter((_, i) => i !== index))}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                            </svg>
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <Button onClick={handleSubmit}>Check</Button>
+              <Dialog open={showResult} onOpenChange={setShowResult}>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Eligibility Result</DialogTitle>
+                  </DialogHeader>
+                  {result ? (
+                    <EligibilityResult
+                      eligibilityDate={result.eligibilityDate}
+                      remainingDays4Years={result.remainingDays4Years}
+                      remainingDays1Year={result.remainingDays1Year}
+                    />
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground">Please select both dates to check eligibility</p>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+        <div className="space-y-4 text-sm text-muted-foreground">
+          <div className="flex items-start gap-2">
+            <div className="space-y-2">
+              <BuyMeCoffee />
+              <p className="font-medium">Disclaimer</p>
+              <p>
+                This web application is provided for general informational purposes only and is not affiliated with the Australian Government or the Department of Home Affairs. It is designed to help users estimate their residential eligibility for Australian citizenship by conferral based on publicly available guidelines.
+              </p>
+              <p>Please note that:</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>The results generated by this tool are estimates only and do not guarantee eligibility.</li>
+                <li>Users must refer to the official Residence Calculator and eligibility requirements provided by the Department of Home Affairs for accurate and up-to-date information.</li>
+              </ul>
+              <p>For authoritative information, please visit:</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li><a href="https://immi.homeaffairs.gov.au/citizenship/become-a-citizen/permanent-resident" className="underline hover:text-foreground" target="_blank" rel="noopener noreferrer">Citizenship Eligibility Criteria</a></li>
+                <li><a href="https://immi.homeaffairs.gov.au/citizenship/become-a-citizen/permanent-resident/residence-calculator" className="underline hover:text-foreground" target="_blank" rel="noopener noreferrer">Official Residence Calculator</a></li>
+                <li><a href="https://immi.homeaffairs.gov.au/entering-and-leaving-australia/request-movement-records" className="underline hover:text-foreground" target="_blank" rel="noopener noreferrer">Request Movement Records</a></li>
+              </ul>
+              <p>Always seek official advice if you are unsure about your eligibility.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
