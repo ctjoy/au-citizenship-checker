@@ -148,7 +148,7 @@ export default function CitizenshipEligibilityApp() {
                 <DatePicker date={residencyStart} onDateChange={setResidencyStart} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Permanent Visa Start Date</label>
+                <label className="block text-sm font-medium mb-2">Permanent Residence Start Date</label>
                 <DatePicker date={permanentVisaStart} onDateChange={setPermanentVisaStart} />
               </div>
               <div>
